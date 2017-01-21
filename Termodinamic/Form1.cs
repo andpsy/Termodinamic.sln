@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using System.IO;
-using System.Xml;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace Termodinamic
 {
@@ -21,20 +17,43 @@ namespace Termodinamic
         public int ManufacturerScrollWidth = 0;
         public int FiltersScrollPos = 0;
         public int ProductsPerLine = 4;
-        public int? category_id = null, material_id = null, manufacturer_id = null;
+
+        public int? category_id = null;
+        public int? material_id = null;
+        public int? manufacturer_id = null;
         public string search_text = null;
+
         public Form1()
         {
             InitializeComponent();
             this.SizeChanged += Form1_SizeChanged;
+            this.FormClosed += Form1_FormClosed;
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
-            this.textBox1.KeyPress += new System.Windows.Forms.KeyPressEventHandler(CheckEnter);
+            Application.Exit();
+        }
+
+        public void Form1_Load(object sender, EventArgs e)
+        {
+            panel4.Visible = panelFiltre.Visible = false;
+            this.textBox1.KeyPress += new KeyPressEventHandler(CheckEnter);
+
+            LoadData();
+            GenerateMenu();
+
+            GetManufacturers();
+            GetProducts();
+
+            ((Loader)this.Owner).Hide();
+        }
+
+        public void LoadData()
+        {
             DirectoryInfo di = new DirectoryInfo("DATA");
             FileInfo[] fis = di.GetFiles();
-            
+
             foreach (FileInfo fi in fis)
             {
                 DataSet ds = new DataSet(fi.Name.Replace(fi.Extension, ""));
@@ -54,7 +73,10 @@ namespace Termodinamic
                     dss.Add(fi.Name.Replace(fi.Extension, ""), new DataTable(fi.Name.Replace(fi.Extension, "")));
                 }
             }
+        }
 
+        public void GenerateMenu()
+        {
             foreach (DataRow category in dss["categories"].Rows)
             {
                 TreeNode tn = new TreeNode(category["NAME"].ToString());
@@ -81,10 +103,8 @@ namespace Termodinamic
                 }
                 treeView1.Nodes.Add(tn);
             }
-
-            GetManufacturers();
-            GetProducts();
         }
+
         private void GetProducts()
         {
             //this.UseWaitCursor = true;
@@ -204,6 +224,7 @@ namespace Termodinamic
                     Filtre.Remove("categorie");
 
                 filter f = new filter("categorie", e.Node.Text, e.Node.Name);
+                f.button1.Click += Button1_Click;
                 Filtre.Add("categorie", f);
                 AddFilters();
 
@@ -220,9 +241,10 @@ namespace Termodinamic
                     Filtre.Remove("categorie");
 
                 filter f = new filter("categorie", e.Node.Parent.Text, e.Node.Parent.Name);
+                f.button1.Click += Button1_Click;
                 Filtre.Add("categorie", f);
-                AddFilters();
                 f = new filter("material", e.Node.Text, e.Node.Name);
+                f.button1.Click += Button1_Click;
                 Filtre.Add("material", f);
                 AddFilters();
 
@@ -232,6 +254,7 @@ namespace Termodinamic
 
         public void AddFilters()
         {
+            panel4.Visible = panelFiltre.Visible = Filtre.Count != 0;
             int counter = 0;
             //splitContainer3.Panel1.Controls["panelFiltre"].Controls["panelFiltreMain"].Controls.Clear();
             panelFiltreMain.Controls.Clear();
@@ -239,7 +262,7 @@ namespace Termodinamic
             {
                 filter fi = (filter)f.Value;
                 fi.Left = counter;
-                fi.button1.Click += Button1_Click;
+                //fi.button1.Click += Button1_Click;
                 //splitContainer3.Panel1.Controls["panelFiltre"].Controls["panelFiltreMain"].Controls.Add(fi);
                 panelFiltreMain.Controls.Add(fi);
                 counter += fi.Width + 3;
@@ -347,6 +370,7 @@ namespace Termodinamic
             }
 
             filter f = new filter("producator", m.manufacturer_name, m.manufacturer_id.ToString());
+            f.button1.Click += Button1_Click;
             Filtre.Add("producator", f);
             //f.Left = GetCurFilterPos();
             //splitContainer3.Panel1.Controls.Add(f);
@@ -384,6 +408,7 @@ namespace Termodinamic
         private productDetail GetProduct(int _product_id)
         {
             List<string> detalii = new List<string>();
+            string stock = "";
             productDetail pd = new productDetail();
             var produse = from products in dss["products"].AsEnumerable()
                           join products_datasheets in dss["products_datasheets"].AsEnumerable() on Convert.ToInt32(products["ID"]) equals Convert.ToInt32(products_datasheets["PRODUCT_ID"])
@@ -395,7 +420,8 @@ namespace Termodinamic
                               PRODUCT_NAME = products["NAME"].ToString(),
                               PRODUCT_DESCRIPTION = products["DESCRIPTION"].ToString(),
                               PRODUCT_MANUFACTURER_PAGE = products["MANUFACTURER_PAGE"].ToString(),
-                              PRODUCT_DATASHEET = datasheets["DATASHEET"].ToString()
+                              PRODUCT_DATASHEET = datasheets["DATASHEET"].ToString(),
+                              PRODUCT_STOCK = products["STOCK"].ToString()
                           };
             foreach (var produs in produse)
             {
@@ -406,6 +432,7 @@ namespace Termodinamic
                 foreach (string s in desc)
                     detalii.Add(s);
                 pd.buttonExit.Click += ButtonExit_Click;
+                stock = produs.PRODUCT_STOCK == "" || produs.PRODUCT_STOCK == null ? "" : produs.PRODUCT_STOCK == "1" ? "-- Produs disponibil in stoc (depozit Arad) --" : "-- Produs disponibil in stoc (depozit Bucuresti) --";
                 break;
             }
 
@@ -498,6 +525,8 @@ namespace Termodinamic
                 detalii.Add("- " + item.ACTUATOR_NAME);
             }
 
+            if (stock != null && stock != "") { detalii.Add(""); detalii.Add(stock); }
+
             pd.textBox1.Lines = detalii.ToArray();
             pd.Dock = DockStyle.Fill;
             return pd;
@@ -536,7 +565,9 @@ namespace Termodinamic
             material_id = null;
             manufacturer_id = null;
             search_text = null;
-            panelFiltreMain.Controls.Clear();
+            //panelFiltreMain.Controls.Clear();
+            Filtre.Clear();
+            AddFilters();
             textBox1.Text = "";
             GetProducts();
         }
@@ -556,6 +587,7 @@ namespace Termodinamic
                     Filtre.Remove("text");
                 search_text = ((TextBox)sender).Text;
                 filter f = new filter("text", search_text, search_text);
+                f.button1.Click += Button1_Click;
                 Filtre.Add("text", f);
                 AddFilters();
                 GetProducts();
