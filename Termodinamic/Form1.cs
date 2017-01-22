@@ -107,72 +107,78 @@ namespace Termodinamic
 
         private void GetProducts()
         {
-            //this.UseWaitCursor = true;
-            //splitContainer1.Panel2.Controls.Clear();
-            splitContainer3.Panel2.Controls.Clear();
-            var results = from categories in dss["categories"].AsEnumerable()
-                          join categories_products in dss["categories_products"].AsEnumerable() on Convert.ToInt32(categories["ID"]) equals Convert.ToInt32(categories_products["CATEGORIE_ID"])
-                          join products in dss["products"].AsEnumerable() on Convert.ToInt32(categories_products["PRODUCT_ID"]) equals Convert.ToInt32(products["ID"])
-                          join products_pictures in dss["products_pictures"].AsEnumerable() on Convert.ToInt32(products["ID"]) equals Convert.ToInt32(products_pictures["PRODUCT_ID"])
-                          join pictures in dss["pictures"].AsEnumerable() on Convert.ToInt32(products_pictures["PICTURE_ID"]) equals Convert.ToInt32(pictures["ID"])
-                          join manufacturers_products in dss["manufacturers_products"].AsEnumerable() on Convert.ToInt32(products["ID"]) equals Convert.ToInt32(manufacturers_products["PRODUCT_ID"])
-                          join manufacturers in dss["manufacturers"].AsEnumerable() on Convert.ToInt32(manufacturers_products["MANUFACTURER_ID"]) equals Convert.ToInt32(manufacturers["ID"])
-                          join manufacturers_pictures in dss["manufacturers_pictures"].AsEnumerable() on Convert.ToInt32(manufacturers["ID"]) equals Convert.ToInt32(manufacturers_pictures["MANUFACTURER_ID"])
-                          join mpictures in dss["pictures"].AsEnumerable() on Convert.ToInt32(manufacturers_pictures["PICTURE_ID"]) equals Convert.ToInt32(mpictures["ID"])
-
-                          join products_materials in dss["products_materials"].AsEnumerable() on Convert.ToInt32(products["ID"]) equals Convert.ToInt32(products_materials["PRODUCT_ID"]) into pms
-                          from pm in pms.DefaultIfEmpty()
-                          where (Convert.ToInt32(categories["ID"]) == Convert.ToInt32(category_id) || category_id==null) && 
-                            ((pm==null || Convert.ToInt32(pm["MATERIAL_ID"])==Convert.ToInt32(material_id)) || material_id == null) &&
-                            (Convert.ToInt32(manufacturers["ID"]) == Convert.ToInt32(manufacturer_id) || manufacturer_id == null) &&
-                            (search_text == null || (
-                                products["NAME"].ToString().ToLower().Contains(search_text.ToLower()) ||
-                                products["DESCRIPTION"].ToString().ToLower().Contains(search_text.ToLower()) ||
-                                products["MANUFACTURER_PAGE"].ToString().ToLower().Contains(search_text.ToLower())
-                                )) &&
-                            Convert.ToInt32(products_pictures["DISPLAY_ORDER"]) == 1
-                          select new
-                          {
-                              PRODUCT_ID = Convert.ToInt32(products["ID"]),
-                              PRODUCT_NAME = products["NAME"].ToString(),
-                              PRODUCT_PICTURE = pictures["PICTURE"].ToString(),
-                              MANUFACTURER_NAME = manufacturers["NAME"].ToString(),
-                              MANUFACTURER_ID = Convert.ToInt32(manufacturers["ID"]),
-                              MANUFACTURER_PICTURE = mpictures["PICTURE"].ToString(),
-                              FLAG = manufacturers["FLAG_LINK"].ToString(),
-                              MATERIAL_ID = pm == null ? null : pm["MATERIAL_ID"].ToString()
-                          };
-            int i = 0;
-            if (category_id == null && material_id == null && manufacturer_id == null && search_text == null) TotalNoOfProducts = results.Count();
-            toolStripStatusLabel1.Text = String.Format("Inregistrari selectate: {0} din {1}.", results.Count().ToString(), TotalNoOfProducts.ToString());
-            foreach (var item in results)
+            try
             {
-                /*
-                if (item.MATERIAL_ID != null)
-                    material_id = Convert.ToInt32(item.MATERIAL_ID);
-                */
-                FileInfo FI = new FileInfo(Path.Combine("IMAGES", "FLAGS", String.Format("{0}.jpg", item.FLAG)));
-                Image flag = Image.FromFile(FI.FullName);
-                byte[] img = Convert.FromBase64String(item.MANUFACTURER_PICTURE);
-                MemoryStream memStm = new MemoryStream(img);
-                memStm.Seek(0, SeekOrigin.Begin);
-                Image mimage = Image.FromStream(memStm);
-                manufacturer m = new manufacturer(mimage, flag, item.MANUFACTURER_ID, item.MANUFACTURER_NAME);
+                //this.UseWaitCursor = true;
+                //splitContainer1.Panel2.Controls.Clear();
+                splitContainer3.Panel2.Controls.Clear();
+                var results = from categories in dss["categories"].AsEnumerable()
+                              join categories_products in dss["categories_products"].AsEnumerable() on Convert.ToInt32(categories["ID"]) equals Convert.ToInt32(categories_products["CATEGORIE_ID"])
+                              join products in dss["products"].AsEnumerable() on Convert.ToInt32(categories_products["PRODUCT_ID"]) equals Convert.ToInt32(products["ID"])
+                              join products_pictures in dss["products_pictures"].AsEnumerable() on Convert.ToInt32(products["ID"]) equals Convert.ToInt32(products_pictures["PRODUCT_ID"])
+                              join pictures in dss["pictures"].AsEnumerable() on Convert.ToInt32(products_pictures["PICTURE_ID"]) equals Convert.ToInt32(pictures["ID"])
+                              join manufacturers_products in dss["manufacturers_products"].AsEnumerable() on Convert.ToInt32(products["ID"]) equals Convert.ToInt32(manufacturers_products["PRODUCT_ID"])
+                              join manufacturers in dss["manufacturers"].AsEnumerable() on Convert.ToInt32(manufacturers_products["MANUFACTURER_ID"]) equals Convert.ToInt32(manufacturers["ID"])
+                              join manufacturers_pictures in dss["manufacturers_pictures"].AsEnumerable() on Convert.ToInt32(manufacturers["ID"]) equals Convert.ToInt32(manufacturers_pictures["MANUFACTURER_ID"])
+                              join mpictures in dss["pictures"].AsEnumerable() on Convert.ToInt32(manufacturers_pictures["PICTURE_ID"]) equals Convert.ToInt32(mpictures["ID"])
 
-                img = Convert.FromBase64String(item.PRODUCT_PICTURE);
-                memStm = new MemoryStream(img);
-                memStm.Seek(0, SeekOrigin.Begin);
-                Image pimage = Image.FromStream(memStm);
+                              join products_materials in dss["products_materials"].AsEnumerable() on Convert.ToInt32(products["ID"]) equals Convert.ToInt32(products_materials["PRODUCT_ID"]) into pms
+                              from pm in pms.DefaultIfEmpty()
+                              where (Convert.ToInt32(categories["ID"]) == Convert.ToInt32(category_id) || category_id == null) &&
+                                ((pm == null || Convert.ToInt32(pm["MATERIAL_ID"]) == Convert.ToInt32(material_id)) || material_id == null) &&
+                                (Convert.ToInt32(manufacturers["ID"]) == Convert.ToInt32(manufacturer_id) || manufacturer_id == null) &&
+                                (search_text == null || (
+                                    products["NAME"].ToString().ToLower().Contains(search_text.ToLower()) ||
+                                    products["DESCRIPTION"].ToString().ToLower().Contains(search_text.ToLower()) ||
+                                    products["MANUFACTURER_PAGE"].ToString().ToLower().Contains(search_text.ToLower())
+                                    )) &&
+                                Convert.ToInt32(products_pictures["DISPLAY_ORDER"]) == 1
+                              select new
+                              {
+                                  PRODUCT_ID = Convert.ToInt32(products["ID"]),
+                                  PRODUCT_NAME = products["NAME"].ToString(),
+                                  PRODUCT_PICTURE = pictures["PICTURE"].ToString(),
+                                  MANUFACTURER_NAME = manufacturers["NAME"].ToString(),
+                                  MANUFACTURER_ID = Convert.ToInt32(manufacturers["ID"]),
+                                  MANUFACTURER_PICTURE = mpictures["PICTURE"].ToString(),
+                                  FLAG = manufacturers["FLAG_LINK"].ToString(),
+                                  MATERIAL_ID = pm == null ? null : pm["MATERIAL_ID"].ToString()
+                              };
+                int i = 0;
+                if (category_id == null && material_id == null && manufacturer_id == null && search_text == null) TotalNoOfProducts = results.Count();
+                toolStripStatusLabel1.Text = String.Format("Inregistrari selectate: {0} din {1}.", results.Count().ToString(), TotalNoOfProducts.ToString());
+                foreach (var item in results)
+                {
+                    /*
+                    if (item.MATERIAL_ID != null)
+                        material_id = Convert.ToInt32(item.MATERIAL_ID);
+                    */
+                    FileInfo FI = new FileInfo(Path.Combine("IMAGES", "FLAGS", String.Format("{0}.jpg", item.FLAG)));
+                    Image flag = Image.FromFile(FI.FullName);
+                    byte[] img = Convert.FromBase64String(item.MANUFACTURER_PICTURE);
+                    MemoryStream memStm = new MemoryStream(img);
+                    memStm.Seek(0, SeekOrigin.Begin);
+                    Image mimage = Image.FromStream(memStm);
+                    manufacturer m = new manufacturer(mimage, flag, item.MANUFACTURER_ID, item.MANUFACTURER_NAME);
 
-                product p = new product(pimage, item.PRODUCT_NAME, m, item.PRODUCT_ID);
-                p.Left = i % ProductsPerLine * (p.Width + 3) + 3;
-                p.Top = (int)(i / ProductsPerLine) * (p.Height + 3) + 3;
-                AttachProductEvents(p);
-                //splitContainer1.Panel2.Controls.Add(p);
-                splitContainer3.Panel2.Controls.Add(p);
-                i++;
+                    img = Convert.FromBase64String(item.PRODUCT_PICTURE);
+                    memStm = new MemoryStream(img);
+                    memStm.Seek(0, SeekOrigin.Begin);
+                    Image pimage = Image.FromStream(memStm);
+
+                    product p = new product(pimage, item.PRODUCT_NAME, m, item.PRODUCT_ID);
+                    p.Left = i % ProductsPerLine * (p.Width + 3) + 3;
+                    p.Top = (int)(i / ProductsPerLine) * (p.Height + 3) + 3;
+                    AttachProductEvents(p);
+                    //splitContainer1.Panel2.Controls.Add(p);
+                    splitContainer3.Panel2.Controls.Add(p);
+                    i++;
+                }
+                //this.UseWaitCursor = false;
+            }catch(Exception exp)
+            {
+                MessageBox.Show(String.Format("A aparut o eroare la incarcarea informatiilor din baza de date: \r\n{0}", exp.Message), "", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
-            //this.UseWaitCursor = false;
         }
 
         private void AttachProductEvents(Control c)
